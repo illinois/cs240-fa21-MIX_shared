@@ -1,24 +1,25 @@
 # Project MIX: API Documentation
 
-*This documentation was created by Jackson Kennel, with additions from Kevin Chen's design.*
+*This documentation was first created by Jackson Kennel, with additions from Kevin Chen's design, and further modifications for CS 240's final project.*
+
 
 ## Adding a Microservice:
 
-In order to add a microservice to MIX, the microservice in question must make a `POST` request to the /microservice endpoint. The `POST` request must send JSON adhering to the following schema:
+In order to add a microservice to MIX, the microservice in question must make a `PUT` request to the /microservice endpoint. The `PUT` request must send JSON adhering to the following schema:
 
 ```
 {
     'port' : 'HOST PORT',
-    'ip' : 'HOST IP',
+    'ip' : 'HOST PROTOCOL and IP',
 
-    'name': 'IM Name for logging (ex: Sunrise Time)',
+    'name': 'Sunrise Time',
     'creator': 'Your Name',
-    'tile': 'IM Name for front-end display (ex: Sunrise Time ☀️)',
+    'tile': 'For use on the front-end display (ex: Sunrise Time ☀️)',
 
     'dependencies' : [
         {
             'port' : 'HOST PORT',
-            'ip' : 'HOST IP',
+            'ip' : 'HOST PROTOCOL and IP',
             'dependencies' : [
                 {
                     ...and so on. Dependencies can be infinitely nested.
@@ -27,14 +28,14 @@ In order to add a microservice to MIX, the microservice in question must make a 
         },
         {
             'port' : 'HOST,
-            'ip' : 'HOST IP',
+            'ip' : 'HOST PROTOCOL and IP',
             'dependencies' : []
         }
     ]
 }
 ```
 
-To track the IP of the microservice, MIX will fetch the IP from the request. MIX will run on `localhost:5000`.
+To track the IP of the microservice, MIX will fetch the IP from the request.
 
 To handle multiple IMs, MIX maintains a running list of all connected IMs. MIX will add all dependencies as if they were independent IMs. For dependency handling, see below.
 
