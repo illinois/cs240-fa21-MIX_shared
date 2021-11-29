@@ -10,6 +10,11 @@ In order to add a microservice to MIX, the microservice in question must make a 
 {
     'port' : 'HOST PORT',
     'ip' : 'HOST IP',
+
+    'name': 'IM Name for logging (ex: Sunrise Time)',
+    'creator': 'Your Name',
+    'tile': 'IM Name for front-end display (ex: Sunrise Time ☀️)',
+
     'dependencies' : [
         {
             'port' : 'HOST PORT',
