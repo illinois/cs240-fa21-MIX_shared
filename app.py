@@ -53,11 +53,22 @@ def convert_dependencies_to_objects(dependencies):
 
 @app.route('/microservice', methods=['DELETE'])
 def remove_microservice():
-  print('connection received from: ' + (request.host))
-  for app in connected_apps:
-    if app.ip == request.host:
-      connected_apps.remove(app)
-      break
+  print('delete request received from: ' + (request.host))
+  previous_len = len(connected_apps)
+  j = request.json
+
+  if 'ip' not in j or 'port' not in j:
+    return 'Invalid Input', 400
+
+  ip = j['ip'] + ':' + j['port']
+  m = Microservice(ip, [])
+
+  connected_apps.discard(m)
+  if len(connected_apps) == previous_len:
+    return 'Not Found', 404
+
+  return 'Success', 200
+
 
   return 'Success', 200
 
