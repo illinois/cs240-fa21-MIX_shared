@@ -69,10 +69,6 @@ def remove_microservice():
 
   return 'Success', 200
 
-
-  return 'Success', 200
-
-
 # Route for "/MIX" (middleware):
 @app.route('/MIX', methods=["POST"])
 def POST_MIX():
