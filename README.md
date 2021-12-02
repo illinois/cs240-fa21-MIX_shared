@@ -108,7 +108,7 @@ IM 1 will receive the following schema as input:
 MIX will cache all responses from IMs. IMs must define the expiry age of their data in their responses, formatted as follows:
 
 ```
-Content-Type: max-age=x
+Cache-Control: max-age=x
 ```
 
 where x is some arbitrary number.
