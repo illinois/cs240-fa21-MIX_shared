@@ -16,4 +16,10 @@ class Microservice:
 
   def __hash__(self) -> int:
     return hash(self.ip)
+  
+  def __eq__(self, other) -> bool:
+    return self.ip == other.ip
+
+  def __ne__(self, other) -> bool:
+    return (not self.__eq__(other))
     
