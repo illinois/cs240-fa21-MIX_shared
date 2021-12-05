@@ -72,6 +72,7 @@ def remove_microservice():
 # Route for "/MIX" (middleware):
 @app.route('/MIX', methods=["POST"])
 def POST_MIX():
+  global connected_apps
   # process form data
   location = request.form['location']
   s = location.split(',')
@@ -86,7 +87,8 @@ def POST_MIX():
 
   # aggregate JSON from all IMs
   r = []
-  for app in connected_apps:
+  app_list = connected_apps.copy()
+  for app in app_list:
     # create a response with the metadata about the IM service:
     j = {
       '_metadata': {
@@ -107,29 +109,22 @@ def POST_MIX():
   return jsonify(r), 200
 
 def process_request(service: Microservice, lat: float, lon: float) -> dict:
+  latlon_data = {'latitude': lat, 'longitude': lon}
   # if we've already processed an IM, we're finished
   if service.ip in processed:
     return processed[service.ip]
 
   if len(service.dependencies) == 0:
     # send a request to each service
-    r = requests.get(service.ip, json={'latitude': lat, 'longitude': lon})
+    return make_im_request(service, latlon_data, lat, lon)
   else:
     # aggregate all dependency data and send as a request to our IM
     dependency_json = get_dependency_data(service, lat, lon)
-    r = requests.get(service.ip, json=dependency_json)
-
-  # if an IM returns a 400/500 level response, evaluate it as an empty JSON schema
-  if r.status_code >= 400:
-    print('service ' + service.ip + ' returned error code ' + str(r.status_code))
-    return {}
-
-  add_entry_to_cache((lat, lon), service, r)
-  processed[service.ip] = r.json()
-  return r.json()
+    dependency_json.update(latlon_data)
+    return make_im_request(service, dependency_json, lat, lon)
 
 
-def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
+def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:  
   j = {}
   for dependency in service.dependencies:
     # handle dependencies which have their own dependencies recursively
@@ -143,16 +138,25 @@ def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
         j.update(processed[dependency.ip])
       else:
         # make new request to IM
-        r = requests.get(dependency.ip, json={'latitude': lat, 'longitude': lon})
-        if r.status_code >= 400:
-          print('service ' + service.ip + ' returned error code ' + str(r.status_code))
-          continue
-
-        add_entry_to_cache((lat, lon), dependency, r)
-        processed[service.ip] = r.json()
-        j.update(r.json())       
+        latlon_data = {'latitude' : lat, 'longitude' : lon}
+        j.update(make_im_request(dependency, latlon_data, lat, lon))       
 
   return j
+
+def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
+  try:
+    r = requests.get(service.ip, json=j)
+  except:
+    print(f'app at address {service.ip} not connecting. removed from MIX!')
+    connected_apps.discard(service)
+    return {}
+  if r.status_code >= 400:
+    print(f'service {service.ip} returned error code {str(r.status_code)}')
+    return {}
+
+  add_entry_to_cache((lat, lon), service, r)
+  processed[service.ip] = r.json()
+  return r.json()
 
 def parse_cache_header(header: str) -> int:
   return float(header.split('=')[1])
