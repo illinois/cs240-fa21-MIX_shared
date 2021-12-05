@@ -151,7 +151,7 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     connected_apps.discard(service)
     return {}
   if r.status_code >= 400:
-    print('service ' + service.ip + ' returned error code ' + str(r.status_code))
+    print(f'service {service.ip} returned error code {str(r.status_code)}')
     return {}
 
   add_entry_to_cache((lat, lon), service, r)
