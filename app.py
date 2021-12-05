@@ -116,31 +116,12 @@ def process_request(service: Microservice, lat: float, lon: float) -> dict:
 
   if len(service.dependencies) == 0:
     # send a request to each service
-    try:
-      r = requests.get(service.ip, json=latlon_data)
-    except:
-      print(f'app at address {service.ip} not connecting. removed from MIX!')
-      connected_apps.remove(service)
-      return {}
+    return make_im_request(service, latlon_data, lat, lon)
   else:
     # aggregate all dependency data and send as a request to our IM
     dependency_json = get_dependency_data(service, lat, lon)
     dependency_json.update(latlon_data)
-    try:
-      r = requests.get(service.ip, json=dependency_json)
-    except:
-      print(f'app at address {service.ip} not connecting. removed from MIX!')
-      connected_apps.remove(service)
-      return {}
-
-  # if an IM returns a 400/500 level response, evaluate it as an empty JSON schema
-  if r.status_code >= 400:
-    print('service ' + service.ip + ' returned error code ' + str(r.status_code))
-    return {}
-
-  add_entry_to_cache((lat, lon), service, r)
-  processed[service.ip] = r.json()
-  return r.json()
+    return make_im_request(service, dependency_json, lat, lon)
 
 
 def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:  
@@ -157,21 +138,25 @@ def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
         j.update(processed[dependency.ip])
       else:
         # make new request to IM
-        try:
-          r = requests.get(dependency.ip, json={'latitude': lat, 'longitude': lon})
-        except:
-          print(f'app at address {dependency.ip} not connecting. removed from MIX!')
-          connected_apps.remove(dependency)
-          continue
-        if r.status_code >= 400:
-          print('service ' + service.ip + ' returned error code ' + str(r.status_code))
-          continue
-
-        add_entry_to_cache((lat, lon), dependency, r)
-        processed[service.ip] = r.json()
-        j.update(r.json())       
+        latlon_data = {'latitude' : lat, 'longitude' : lon}
+        j.update(make_im_request(dependency, latlon_data, lat, lon))       
 
   return j
+
+def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
+  try:
+    r = requests.get(service.ip, json=j)
+  except:
+    print(f'app at address {service.ip} not connecting. removed from MIX!')
+    connected_apps.discard(service)
+    return {}
+  if r.status_code >= 400:
+    print('service ' + service.ip + ' returned error code ' + str(r.status_code))
+    return {}
+
+  add_entry_to_cache((lat, lon), service, r)
+  processed[service.ip] = r.json()
+  return r.json()
 
 def parse_cache_header(header: str) -> int:
   return float(header.split('=')[1])
