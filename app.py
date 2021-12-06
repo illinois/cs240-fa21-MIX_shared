@@ -69,6 +69,17 @@ def remove_microservice():
 
   return 'Success', 200
 
+@app.route('/status', methods=["GET"])
+def list_all_connected_IMs():
+  status = {}
+  # print(connected_apps)
+  # print("\n\n\n")
+  for app in connected_apps:
+    status[str(app) + " dependencies"] = [str(depend).split()[-1] for depend in app.dependencies]
+  #print(status)
+  #print("\n\n\n")
+  return jsonify(status), 200
+
 # Route for "/MIX" (middleware):
 @app.route('/MIX', methods=["POST"])
 def POST_MIX():
