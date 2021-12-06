@@ -21,10 +21,10 @@ def index():
 @app.route('/microservice', methods=['PUT'])
 def add_microservice():
     # Verify all required keys are present in JSON:
-    requiredKeys = ['port', 'ip', 'name', 'creator', 'tile']
-    for requiredKey in requiredKeys:
-        if requiredKey not in request.json:
-            return f'Required key {requiredKey} not present in payload JSON.', 400
+    required_keys = ['port', 'ip', 'name', 'creator', 'tile']
+    for required_key in required_keys:
+        if required_key not in request.json:
+            return f'Required key {required_key} not present in payload JSON.', 400
 
     # Add the microservice:
     dependency_list = convert_dependencies_to_objects(request.json['dependencies'])
@@ -55,7 +55,7 @@ def convert_dependencies_to_objects(dependencies):
 
 @app.route('/microservice', methods=['DELETE'])
 def remove_microservice():
-    print('delete request received from: ' + (request.host))
+    print(f'delete request received from: {request.host}')
     previous_len = len(connected_apps)
     j = request.json
 
@@ -151,8 +151,8 @@ def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
 def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
     try:
         r = requests.get(service.ip, json=j)
-    except:
-        print(f'app at address {service.ip} not connecting. removed from MIX!')
+    except requests.exceptions.RequestException:
+        print(f'app {service.name} at address {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
         return {}
     if r.status_code >= 400:
@@ -164,7 +164,7 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     return r.json()
 
 
-def parse_cache_header(header: str) -> int:
+def parse_cache_header(header: str) -> float:
     return float(header.split('=')[1])
 
 
