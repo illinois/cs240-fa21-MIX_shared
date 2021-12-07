@@ -94,17 +94,18 @@ def POST_MIX():
     # aggregate JSON from all IMs
     r = []
     for im in connected_apps:
-        # create a response with the metadata about the IM service:
-        j = {
+        # get the IM response:
+        j = process_request(im, lat, lon)
+
+        # add metadata about the IM service:
+        j |= {
             '_metadata': {
                 'name': im.name,
                 'creator': im.creator,
                 'tile': im.tile,
+                'max-age': im.max_age
             }
         }
-
-        # add the IM response:
-        j.update(process_request(im, lat, lon))
 
         r.append(j)
 
@@ -177,16 +178,15 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     try:
         r = requests.get(service.ip, json=j, timeout=2)
     except requests.exceptions.RequestException:
-        print(f'service {service.name} at address {service.ip} not connecting. removed from MIX!')
+        print(f'service {service.name} at {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
         return {}
 
     if 500 > r.status_code >= 400:
-        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}')
+        print(f'service {service.name} at {service.ip} returned error code {str(r.status_code)}')
         return {}
     elif r.status_code >= 500:
-        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}'
-              f' - removed from MIX!')
+        print(f'service {service.name} at {service.ip} returned error code {str(r.status_code)} - removed from MIX!')
         connected_apps.discard(service)
         return {}
 
@@ -197,8 +197,12 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
 def parse_cache_header(header: str) -> float:
     """
     Return the age from a Cache-Control header string.
+    raises ValueError if the Cache-Control is not recognized.
     """
-    return float(header.split('=')[1])
+    m = re.match(r"max-age=(\d+)", header)
+    if m is None:
+        raise ValueError
+    return float(m.group(1))
 
 
 def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
@@ -206,8 +210,15 @@ def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
     Add a microservice response to cache.
     """
     # set max_age for a service if it has not been set already
-    if service.max_age == 0:
-        service.max_age = parse_cache_header(response.headers['Cache-Control'])
+    if service.max_age is None:
+        if 'Cache-Control' not in response.headers or 'max-age' not in response.headers['Cache-Control']:
+            service.max_age = 0  # no cache
+        else:
+            try:
+                service.max_age = parse_cache_header(response.headers['Cache-Control'])
+            except ValueError:
+                print(f'Bad Cache-Control for service {service.name} at {service.ip} - falling back to no-cache.')
+                service.max_age = 0
 
     # enter the service response json into our cache
     if latlon not in cache:
