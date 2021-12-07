@@ -88,7 +88,7 @@ def POST_MIX():
 
   match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", location)
   if match is None:
-    'Invalid input', 400
+    return 'Invalid input', 400
   
   lat = float(match.group(1))
   lon = float(match.group(3))
