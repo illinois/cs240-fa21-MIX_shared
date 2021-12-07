@@ -68,8 +68,11 @@ def POST_MIX():
     lat = float(s[0])
     lon = float(s[1])
 
-    if abs(lat) > 90 or abs(lon) > 90:
-        return 'Invalid input', 400
+    if abs(lat) > 90:
+        return 'Invalid latitude', 400
+
+    if abs(lon) > 180:
+        return 'Invalid longitude', 400
 
     # aggregate JSON from all IMs
     r = []
