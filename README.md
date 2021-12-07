@@ -7,29 +7,33 @@
 
 In order to add a microservice to MIX, the microservice in question must make a `PUT` request to the /microservice endpoint. The `PUT` request must send JSON adhering to the following schema:
 
-```
+```json
 {
-    'port' : 'HOST PORT',
-    'ip' : 'HOST PROTOCOL and IP',
+    "port" : "HOST PORT",
+    "ip" : "HOST PROTOCOL and IP",
 
-    'name': 'Sunrise Time',
-    'creator': 'Your Name',
-    'tile': 'For use on the front-end display (ex: Sunrise Time ☀️)',
+    "name": "Sunrise Time",
+    "creator": "Your Name",
+    "tile": "For use on the front-end display (ex: Sunrise Time ☀️)",
 
-    'dependencies' : [
+    "dependencies" : [
         {
-            'name' : 'Another IM',
-            'creator' : 'Your Name'
+            "name" : "Some IM",
+            "creator" : "Your Name"
         },
         {
-            'port' : 'HOST PORT',
-            'ip' : 'HOST PROTOCOL and IP'
+            "name" : "Another IM",
+            "creator" : "Your Name"
+        },
+        {
+            "port" : "IM port",
+            "ip" : "IM host protocol and IP"
         }
     ]
 }
 ```
 
-On the first request, MIX will search the list of connected IMs to match the specified dependencies.
+On the first request to the IM, MIX will search the list of connected IMs to match the specified dependencies.
 
 The accepted formats are (in order of match priority):
 - `name` and `creator`
@@ -43,10 +47,10 @@ To handle multiple IMs, MIX maintains a running list of all connected IMs. MIX w
 
 To remove a microservice from MIX, the microservice must make a `DELETE` request to the /microservice endpoint. The `DELETE` request must send JSON adhering to the following schema:
 
-```
+```json
 { 
-    'port' : 'HOST PORT'
-    'ip' : 'HOST IP'
+    "port" : "HOST PORT",
+    "ip" : "HOST IP"
 }
 ```
 
@@ -54,7 +58,7 @@ To remove a microservice from MIX, the microservice must make a `DELETE` request
 
 MIX will handle dependencies in a tree-like bottom-up fashion, retrieving the output of all of any IMs dependencies before making a request to that IM. IMs are not required to do dependency handling, as MIX will handle it. All IMs which have dependencies are assumed to not require location data.*
 
-*(this is not consistent with MIX behavior, as MIX gives location data to IMs with dependencies.)
+*This is not actually consistent with MIX behavior, as MIX gives location data to IMs with dependencies.
 
 ## Requirements for IMs:
 
@@ -69,10 +73,10 @@ MIX will handle dependencies in a tree-like bottom-up fashion, retrieving the ou
 
 MIX will send the following JSON schema to all IMs which do not have any dependencies:
 
-```
+```json
 {
-    'latitude' : float,
-    'longitude' : float
+    "latitude" : float,
+    "longitude" : float
 }
 ```
 
@@ -82,28 +86,28 @@ IM 1 has dependencies 2 and 3.
 
 IM 2 has the following schema:
 
-```
+```json
 {
-    'distance' : float
+    "distance" : float
 }
 ```
 
 IM 3 has the following schema:
 
-```
+```json
 {
-    'squared_distance' : float
+    "squared_distance" : float
 }
 ```
 
 IM 1 will receive the following schema as input:
 
-```
+```json
 {
-    'latitude' : float,
-    'longitude' : float,
-    'distance' : float,
-    'squared_distance' : float
+    "latitude" : float,
+    "longitude" : float,
+    "distance" : float,
+    "squared_distance" : float
 }
 ```
 
