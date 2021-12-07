@@ -8,7 +8,6 @@ from datetime import datetime
 app = Flask(__name__)
 
 connected_apps = set()
-processed = {}
 cache = {}
 
 
@@ -27,10 +26,9 @@ def add_microservice():
             return f'Required key {required_key} not present in payload JSON.', 400
 
     # Add the microservice:
-    dependency_list = convert_dependencies_to_objects(request.json['dependencies'])
     m = Microservice(
         request.json['ip'] + ':' + request.json['port'],
-        dependency_list,
+        request.json.get('dependencies', []),
         request.json['name'],
         request.json['creator'],
         request.json['tile'],
@@ -39,18 +37,6 @@ def add_microservice():
     connected_apps.add(m)
 
     return 'Success', 200
-
-
-def convert_dependencies_to_objects(dependencies):
-    dp_list = []
-    for x in dependencies:
-        # recursively fetch dependency lists where necessary
-        if list(x['dependencies']) != list():
-            dp_list.append(Microservice(x['ip'] + ':' + x['port'], convert_dependencies_to_objects(x['dependencies'])))
-        else:
-            dp_list.append(Microservice(x['ip'] + ':' + x['port'], []))
-
-    return dp_list
 
 
 @app.route('/microservice', methods=['DELETE'])
@@ -85,74 +71,91 @@ def POST_MIX():
     if abs(lat) > 90 or abs(lon) > 90:
         return 'Invalid input', 400
 
-    # clear list of processed requests from connected apps
-    processed.clear()
-
     # aggregate JSON from all IMs
     r = []
-    app_list = connected_apps.copy()
-    for app in app_list:
+    for im in connected_apps:
         # create a response with the metadata about the IM service:
         j = {
             '_metadata': {
-                'name': app.name,
-                'creator': app.creator,
-                'tile': app.tile,
+                'name': im.name,
+                'creator': im.creator,
+                'tile': im.tile,
             }
         }
 
         # add the IM response:
-        if cache_hit((lat, lon), app):
-            j.update(cache[(lat, lon)][app.ip][0])
-        else:
-            j.update(process_request(app, lat, lon))
+        j.update(process_request(im, lat, lon))
 
         r.append(j)
 
     return jsonify(r), 200
 
 
-def process_request(service: Microservice, lat: float, lon: float) -> dict:
-    latlon_data = {'latitude': lat, 'longitude': lon}
-    # if we've already processed an IM, we're finished
-    if service.ip in processed:
-        return processed[service.ip]
-
-    if len(service.dependencies) == 0:
-        # send a request to each service
-        return make_im_request(service, latlon_data, lat, lon)
-    else:
-        # aggregate all dependency data and send as a request to our IM
-        dependency_json = get_dependency_data(service, lat, lon)
-        dependency_json.update(latlon_data)
-        return make_im_request(service, dependency_json, lat, lon)
-
-
-def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
-    j = {}
-    for dependency in service.dependencies:
-        # handle dependencies which have their own dependencies recursively
-        if len(dependency.dependencies) > 0:
-            for dd in dependency.dependencies:
-                j.update(get_dependency_data(dd, lat, lon))
-
-        else:
-            # if we've already made a request to this IM, just fetch from our processed requests dict
-            if dependency.ip in processed:
-                j.update(processed[dependency.ip])
+def get_dependencies(dependency_info: [dict]) -> [Microservice]:
+    """
+    Convert a json list of dependencies into a list of Microservice objects,
+    by searching for the appropriate Microservices in connected_apps.
+    """
+    dependency_list = []
+    for dependency in dependency_info:
+        # search for a matching IM
+        if 'ip' in dependency and 'port' in dependency:
+            for im in connected_apps:
+                if im['ip'] == dependency['ip'] + ':' + dependency['port']:
+                    dependency_list.append(im)
+                    break
             else:
-                # make new request to IM
-                latlon_data = {'latitude': lat, 'longitude': lon}
-                j.update(make_im_request(dependency, latlon_data, lat, lon))
+                raise ValueError('Dependency not found')
+        if 'name' in dependency and 'creator' in dependency:
+            for im in connected_apps:
+                if im['name'] == dependency['name'] and im['creator'] == dependency['creator']:
+                    dependency_list.append(im)
+                    break
+            else:
+                raise ValueError('Dependency not found')
+        else:
+            raise ValueError('Not enough dependency information')
+    return dependency_list
 
-    return j
+
+def process_request(service: Microservice, lat: float, lon: float, visited=tuple()) -> dict:
+    """
+    Return the json output of a microservice, recursively calling this function for dependencies.
+    Any cache hits will be returned.
+    """
+    # cache check
+    if cache_hit((lat, lon), service):
+        return cache[(lat, lon)][service.ip][0]
+
+    # aggregate all dependency data (starting with lat, lon) and send as a request to our IM
+    dependency_results = {'latitude': lat, 'longitude': lon}
+
+    try:
+        dependencies = get_dependencies(service.dependencies)
+    except ValueError as e:
+        print(f'{e} for service {service.ip}')
+        return {}
+
+    for dependency in dependencies:
+        if dependency in visited:
+            # check for circular dependencies
+            print(f'Circular dependency: asking for {dependency} on top of {list(visited)}')
+            return {}
+        else:
+            # concatenate results to dependency_results
+            dependency_results |= process_request(dependency, lat, lon, visited + (dependency,))
+
+    return make_im_request(service, dependency_results, lat, lon)
 
 
 def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
+    """
+    Return the json response after a GET request to a service (with a json input j).
+    """
     try:
         r = requests.get(service.ip, json=j)
     except requests.exceptions.RequestException:
-        print(f'app {service.name} at address {service.ip} not connecting. removed from MIX!')
+        print(f'service {service.name} at address {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
         return {}
     if r.status_code >= 400:
@@ -160,15 +163,20 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
         return {}
 
     add_entry_to_cache((lat, lon), service, r)
-    processed[service.ip] = r.json()
     return r.json()
 
 
 def parse_cache_header(header: str) -> float:
+    """
+    Return the age from a Cache-Control header string.
+    """
     return float(header.split('=')[1])
 
 
 def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
+    """
+    Add a microservice response to cache.
+    """
     # set max_age for a service if it has not been set already
     if service.max_age == 0:
         service.max_age = parse_cache_header(response.headers['Cache-Control'])
@@ -180,17 +188,19 @@ def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
         cache[latlon][service.ip] = (response.json(), datetime.now())
 
 
-def cache_hit(latlong: tuple, service: Microservice) -> bool:
-    if service.max_age == 0 or latlong not in cache or service.ip not in cache.get(latlong):
+def cache_hit(latlon: tuple, service: Microservice) -> bool:
+    """
+    Return whether a cached response is available.
+    """
+    if service.max_age == 0 or latlon not in cache or service.ip not in cache.get(latlon):
         print('cache miss! entry not in cache')
         return False
 
     curr_time = datetime.now()
-    timediff = curr_time - cache[latlong][service.ip][1]
+    timediff = curr_time - cache[latlon][service.ip][1]
 
     if timediff.total_seconds() < service.max_age:
         print('cache hit!')
         return True
-
     print('cache miss! exceeded max_age')
     return False
