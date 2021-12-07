@@ -84,9 +84,13 @@ def POST_MIX():
   global connected_apps
   # process form data
   location = request.form['location']
-  s = location.split(',')
-  lat = float(s[0])
-  lon = float(s[1])
+  
+  match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", location)
+  if match is None:
+    'Invalid input', 400
+  
+  lat = float(match.group(1))
+  lon = float(match.group(3))
 
   if abs(lat) > 90:
     return 'Invalid latitude', 400
@@ -157,7 +161,7 @@ def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
 
 def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
   try:
-    r = requests.get(service.ip, json=j)
+    r = requests.get(service.ip, json=j, timeout=1)
   except:
     print(f'app at address {service.ip} not connecting. removed from MIX!')
     connected_apps.discard(service)
