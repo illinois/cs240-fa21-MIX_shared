@@ -26,6 +26,13 @@ def add_microservice():
         if required_key not in request.json:
             return f'Required key {required_key} not present in payload JSON.', 400
 
+        if required_key != 'port':
+            if type(request.json) != str:
+                return f'Required key {required_key} has invalid type in payload JSON (should be str).', 400
+        else:
+            if type(request.json) not in [str, int]:
+                return f'Required key {required_key} has invalid type in payload JSON (should be str or int).', 400
+
     # Add the microservice:
     m = Microservice(
         request.json['ip'] + ':' + request.json['port'],
