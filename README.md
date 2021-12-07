@@ -18,12 +18,12 @@ In order to add a microservice to MIX, the microservice in question must make a 
 
     'dependencies' : [
         {
-            'port' : 'HOST PORT',
-            'ip' : 'HOST PROTOCOL and IP'
+            'name' : 'Another IM',
+            'creator' : 'Your Name'
         },
         {
-            'name' : 'Some IM',
-            'creator' : 'Your Name'
+            'port' : 'HOST PORT',
+            'ip' : 'HOST PROTOCOL and IP'
         }
     ]
 }
@@ -32,8 +32,8 @@ In order to add a microservice to MIX, the microservice in question must make a 
 On the first request, MIX will search the list of connected IMs to match the specified dependencies.
 
 The accepted formats are (in order of match priority):
-- `ip` and `port`
 - `name` and `creator`
+- `ip` and `port`
 
 To track the IP of the microservice, MIX will fetch the IP from the request.
 

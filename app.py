@@ -102,16 +102,16 @@ def get_dependencies(dependency_info: [dict]) -> [Microservice]:
     dependency_list = []
     for dependency in dependency_info:
         # search for a matching IM
-        if 'ip' in dependency and 'port' in dependency:
+        if 'name' in dependency and 'creator' in dependency:
             for im in connected_apps:
-                if im.ip == dependency['ip'] + ':' + dependency['port']:
+                if im.name == dependency['name'] and im.creator == dependency['creator']:
                     dependency_list.append(im)
                     break
             else:
                 raise ValueError('Dependency not found')
-        if 'name' in dependency and 'creator' in dependency:
+        elif 'ip' in dependency and 'port' in dependency:
             for im in connected_apps:
-                if im.name == dependency['name'] and im.creator == dependency['creator']:
+                if im.ip == dependency['ip'] + ':' + dependency['port']:
                     dependency_list.append(im)
                     break
             else:
