@@ -60,12 +60,12 @@ def remove_microservice():
 
 
 @app.route('/status', methods=["GET"])
-def list_all_connected_IMs():
+def list_all_connected_services():
     status = [{
         'name': service.name,
         'creator': service.creator,
         'ip': service.ip,
-        'dependencies': [str(depend).split()[-1] for depend in service.dependencies]
+        'dependencies': [depend.ip for depend in service.dependencies]
     } for service in connected_apps]
 
     return jsonify(status), 200
@@ -180,8 +180,14 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
         print(f'service {service.name} at address {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
         return {}
-    if r.status_code >= 400:
-        print(f'service {service.ip} returned error code {str(r.status_code)}')
+
+    if 500 > r.status_code >= 400:
+        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}')
+        return {}
+    elif r.status_code >= 500:
+        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}'
+              f' - removed from MIX!')
+        connected_apps.discard(service)
         return {}
 
     add_entry_to_cache((lat, lon), service, r)

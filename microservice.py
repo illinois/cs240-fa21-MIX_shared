@@ -23,6 +23,3 @@ class Microservice:
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
-
-    def __repr__(self) -> str:
-        return f"{self.tile} {self.name} IM by {self.creator} at {self.ip}"
