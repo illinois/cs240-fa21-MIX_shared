@@ -130,16 +130,18 @@ def process_request(service: Microservice, lat: float, lon: float, visited=tuple
     if cache_hit((lat, lon), service):
         return cache[(lat, lon)][service.ip][0]
 
+    # first time dependency search
+    if service.dependencies is None:
+        try:
+            service.dependencies = get_dependencies(service.dependency_info)
+        except ValueError as e:
+            print(f'{e} for service {service.ip}')
+            return {}
+
     # aggregate all dependency data (starting with lat, lon) and send as a request to our IM
     dependency_results = {'latitude': lat, 'longitude': lon}
 
-    try:
-        dependencies = get_dependencies(service.dependencies)
-    except ValueError as e:
-        print(f'{e} for service {service.ip}')
-        return {}
-
-    for dependency in dependencies:
+    for dependency in service.dependencies:
         if dependency in visited:
             # check for circular dependencies
             print(f'Circular dependency: asking for {dependency} on top of {list(visited)}')

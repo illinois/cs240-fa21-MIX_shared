@@ -1,6 +1,7 @@
 class Microservice:
     ip = None
-    dependencies = []
+    dependency_info = []
+    dependencies = None
     max_age = None
     name = None
     creator = None
@@ -8,7 +9,7 @@ class Microservice:
 
     def __init__(self, host, d, name=None, creator=None, tile=None):
         self.ip = host
-        self.dependencies = d
+        self.dependency_info = d
         self.max_age = 0
         self.name = name
         self.creator = creator
