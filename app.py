@@ -72,11 +72,13 @@ def remove_microservice():
 
 @app.route('/status', methods=["GET"])
 def list_all_connected_IMs():
-  status = {}
+  status = [{
+    'name': service.name,
+    'creator': service.creator,
+    'ip': service.ip,
+    'dependencies': [str(depend).split()[-1] for depend in app.dependencies]
+  } for service in connected_apps]
 
-  # gets ip:port for each dependency of each app that's connected
-  for app in connected_apps:
-    status[str(app).split()[-1]] = [str(depend).split()[-1] for depend in app.dependencies]
   return jsonify(status), 200
 
 # Route for "/MIX" (middleware):
