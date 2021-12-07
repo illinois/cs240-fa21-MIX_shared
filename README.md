@@ -19,21 +19,21 @@ In order to add a microservice to MIX, the microservice in question must make a 
     'dependencies' : [
         {
             'port' : 'HOST PORT',
-            'ip' : 'HOST PROTOCOL and IP',
-            'dependencies' : [
-                {
-                    ...and so on. Dependencies can be infinitely nested.
-                }
-            ]
+            'ip' : 'HOST PROTOCOL and IP'
         },
         {
-            'port' : 'HOST,
-            'ip' : 'HOST PROTOCOL and IP',
-            'dependencies' : []
+            'name' : 'Some IM',
+            'creator' : 'Your Name'
         }
     ]
 }
 ```
+
+On the first request, MIX will search the list of connected IMs to match the specified dependencies.
+
+The accepted formats are (in order of match priority):
+- `ip` and `port`
+- `name` and `creator`
 
 To track the IP of the microservice, MIX will fetch the IP from the request.
 
@@ -52,7 +52,9 @@ To remove a microservice from MIX, the microservice must make a `DELETE` request
 
 ## Dependency Handling:
 
-MIX will handle dependencies in a tree-like bottom-up fashion, retrieving the output of all of any IMs dependencies before making a request to that IM. IMs are not required to do dependency handling, as MIX will handle it. All IMs which have dependencies are assumed to not require location data. In order to avoid redundant requests to IMs, MIX maintains a running list of all IMs which have already had requests sent to them.
+MIX will handle dependencies in a tree-like bottom-up fashion, retrieving the output of all of any IMs dependencies before making a request to that IM. IMs are not required to do dependency handling, as MIX will handle it. All IMs which have dependencies are assumed to not require location data.*
+
+*(this is not consistent with MIX behavior, as MIX gives location data to IMs with dependencies.)
 
 ## Requirements for IMs:
 
@@ -74,7 +76,7 @@ MIX will send the following JSON schema to all IMs which do not have any depende
 }
 ```
 
-For IMs with multiple dependencies, MIX will combine the JSON schema of each dependency to send to that IM. Consider the following example:
+For IMs with multiple dependencies, MIX will combine the latitude and longitude with the JSON schema of each dependency to send to that IM. Consider the following example:
 
 IM 1 has dependencies 2 and 3.
 
@@ -98,7 +100,9 @@ IM 1 will receive the following schema as input:
 
 ```
 {
-    'distance' : float
+    'latitude' : float,
+    'longitude' : float,
+    'distance' : float,
     'squared_distance' : float
 }
 ```
@@ -112,3 +116,5 @@ Cache-Control: max-age=x
 ```
 
 where x is some arbitrary number.
+
+Currently, MIX infers the `max-age` of all responses from the first IM response with non-zero `max-age`.
