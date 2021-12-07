@@ -22,4 +22,7 @@ class Microservice:
 
   def __ne__(self, other) -> bool:
     return (not self.__eq__(other))
+  
+  def __repr__(self) -> str:
+    return "{tile} {name} IM by {creator} at {ip}".format(tile = self.tile, name = self.name, creator = self.creator, ip = self.ip)
     
