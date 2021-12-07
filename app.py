@@ -162,7 +162,7 @@ def get_dependency_data(service: Microservice, lat: float, lon: float) -> dict:
 
 def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> dict:
   try:
-    r = requests.get(service.ip, json=j, timeout=1)
+    r = requests.get(service.ip, json=j, timeout=2)
   except:
     print(f'app at address {service.ip} not connecting. removed from MIX!')
     connected_apps.discard(service)
