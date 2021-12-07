@@ -75,8 +75,8 @@ MIX will send the following JSON schema to all IMs which do not have any depende
 
 ```json
 {
-    "latitude" : float,
-    "longitude" : float
+    "latitude" : 11.1234,
+    "longitude" : 22.1234
 }
 ```
 
@@ -88,7 +88,7 @@ IM 2 has the following schema:
 
 ```json
 {
-    "distance" : float
+    "distance" : 5
 }
 ```
 
@@ -96,7 +96,7 @@ IM 3 has the following schema:
 
 ```json
 {
-    "squared_distance" : float
+    "squared_distance" : 25
 }
 ```
 
@@ -104,10 +104,10 @@ IM 1 will receive the following schema as input:
 
 ```json
 {
-    "latitude" : float,
-    "longitude" : float,
-    "distance" : float,
-    "squared_distance" : float
+    "latitude" : 11.1234,
+    "longitude" : 22.1234,
+    "distance" : 5,
+    "squared_distance" : 25
 }
 ```
 
