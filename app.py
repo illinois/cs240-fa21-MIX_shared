@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 from microservice import Microservice
 
+import re
 import json
 from datetime import datetime
 
@@ -58,15 +59,31 @@ def remove_microservice():
     return 'Success', 200
 
 
+@app.route('/status', methods=["GET"])
+def list_all_connected_IMs():
+    status = [{
+        'name': service.name,
+        'creator': service.creator,
+        'ip': service.ip,
+        'dependencies': [str(depend).split()[-1] for depend in service.dependencies]
+    } for service in connected_apps]
+
+    return jsonify(status), 200
+
+
 # Route for "/MIX" (middleware):
 @app.route('/MIX', methods=["POST"])
 def POST_MIX():
     global connected_apps
     # process form data
     location = request.form['location']
-    s = location.split(',')
-    lat = float(s[0])
-    lon = float(s[1])
+
+    match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", location)
+    if match is None:
+        return 'Invalid input', 400
+
+    lat = float(match.group(1))
+    lon = float(match.group(3))
 
     if abs(lat) > 90:
         return 'Invalid latitude', 400
@@ -158,7 +175,7 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     Return the json response after a GET request to a service (with a json input j).
     """
     try:
-        r = requests.get(service.ip, json=j)
+        r = requests.get(service.ip, json=j, timeout=2)
     except requests.exceptions.RequestException:
         print(f'service {service.name} at address {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
