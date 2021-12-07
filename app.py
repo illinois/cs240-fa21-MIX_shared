@@ -76,7 +76,7 @@ def list_all_connected_IMs():
     'name': service.name,
     'creator': service.creator,
     'ip': service.ip,
-    'dependencies': [str(depend).split()[-1] for depend in app.dependencies]
+    'dependencies': [str(depend).split()[-1] for depend in service.dependencies]
   } for service in connected_apps]
 
   return jsonify(status), 200
