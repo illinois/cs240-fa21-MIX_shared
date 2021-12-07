@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import requests
 from microservice import Microservice
 
+import re
 import json
 from datetime import datetime
 
@@ -84,7 +85,7 @@ def POST_MIX():
   global connected_apps
   # process form data
   location = request.form['location']
-  
+
   match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", location)
   if match is None:
     'Invalid input', 400
