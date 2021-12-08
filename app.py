@@ -96,7 +96,7 @@ def POST_MIX():
 
     # aggregate JSON from all IMs
     r = []
-    for im in connected_apps:
+    for im in connected_apps.copy():
         # get the IM response:
         j = process_request(im, lat, lon)
 
