@@ -68,7 +68,7 @@ def list_all_connected_services():
         'name': service.name,
         'creator': service.creator,
         'ip': service.ip,
-        'dependencies': [depend.ip for depend in service.dependencies]
+        'dependencies': [depend.ip for depend in service.dependencies] if service.dependencies is not None else []
     } for service in connected_apps]
 
     return jsonify(status), 200
