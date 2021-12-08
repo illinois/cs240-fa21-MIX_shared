@@ -26,6 +26,9 @@ def add_microservice():
         if required_key not in request.json:
             return f'Required key {required_key} not present in payload JSON.', 400
 
+        if isinstance(request.json, str):
+            return f'Required key {required_key} has invalid type in payload JSON (should be str).', 400
+
     # Add the microservice:
     m = Microservice(
         request.json['ip'] + ':' + request.json['port'],
@@ -65,7 +68,7 @@ def list_all_connected_services():
         'name': service.name,
         'creator': service.creator,
         'ip': service.ip,
-        'dependencies': [depend.ip for depend in service.dependencies]
+        'dependencies': [depend.ip for depend in service.dependencies] if service.dependencies is not None else []
     } for service in connected_apps]
 
     return jsonify(status), 200
@@ -94,17 +97,18 @@ def POST_MIX():
     # aggregate JSON from all IMs
     r = []
     for im in connected_apps:
-        # create a response with the metadata about the IM service:
-        j = {
+        # get the IM response:
+        j = process_request(im, lat, lon)
+
+        # add metadata about the IM service:
+        j.update({
             '_metadata': {
                 'name': im.name,
                 'creator': im.creator,
                 'tile': im.tile,
+                'max-age': im.max_age
             }
-        }
-
-        # add the IM response:
-        j.update(process_request(im, lat, lon))
+        })
 
         r.append(j)
 
@@ -165,7 +169,7 @@ def process_request(service: Microservice, lat: float, lon: float, visited=tuple
             return {}
         else:
             # concatenate results to dependency_results
-            dependency_results |= process_request(dependency, lat, lon, visited + (dependency,))
+            dependency_results.update(process_request(dependency, lat, lon, visited + (dependency,)))
 
     return make_im_request(service, dependency_results, lat, lon)
 
@@ -177,16 +181,15 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     try:
         r = requests.get(service.ip, json=j, timeout=2)
     except requests.exceptions.RequestException:
-        print(f'service {service.name} at address {service.ip} not connecting. removed from MIX!')
+        print(f'service {service.name} at {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
         return {}
 
     if 500 > r.status_code >= 400:
-        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}')
+        print(f'service {service.name} at {service.ip} returned error code {str(r.status_code)}')
         return {}
     elif r.status_code >= 500:
-        print(f'service {service.name} at address {service.ip} returned error code {str(r.status_code)}'
-              f' - removed from MIX!')
+        print(f'service {service.name} at {service.ip} returned error code {str(r.status_code)} - removed from MIX!')
         connected_apps.discard(service)
         return {}
 
@@ -197,8 +200,12 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
 def parse_cache_header(header: str) -> float:
     """
     Return the age from a Cache-Control header string.
+    raises ValueError if the Cache-Control is not recognized.
     """
-    return float(header.split('=')[1])
+    m = re.match(r"max-age=(\d+)", header)
+    if m is None:
+        raise ValueError
+    return float(m.group(1))
 
 
 def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
@@ -206,8 +213,15 @@ def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
     Add a microservice response to cache.
     """
     # set max_age for a service if it has not been set already
-    if service.max_age == 0:
-        service.max_age = parse_cache_header(response.headers['Cache-Control'])
+    if service.max_age is None:
+        if 'Cache-Control' not in response.headers or 'max-age' not in response.headers['Cache-Control']:
+            service.max_age = 0  # no cache
+        else:
+            try:
+                service.max_age = parse_cache_header(response.headers['Cache-Control'])
+            except ValueError:
+                print(f'Bad Cache-Control for service {service.name} at {service.ip} - falling back to no-cache.')
+                service.max_age = 0
 
     # enter the service response json into our cache
     if latlon not in cache:
