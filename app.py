@@ -101,14 +101,14 @@ def POST_MIX():
         j = process_request(im, lat, lon)
 
         # add metadata about the IM service:
-        j |= {
+        j.update({
             '_metadata': {
                 'name': im.name,
                 'creator': im.creator,
                 'tile': im.tile,
                 'max-age': im.max_age
             }
-        }
+        })
 
         r.append(j)
 
@@ -169,7 +169,7 @@ def process_request(service: Microservice, lat: float, lon: float, visited=tuple
             return {}
         else:
             # concatenate results to dependency_results
-            dependency_results |= process_request(dependency, lat, lon, visited + (dependency,))
+            dependency_results.update(process_request(dependency, lat, lon, visited + (dependency,)))
 
     return make_im_request(service, dependency_results, lat, lon)
 
