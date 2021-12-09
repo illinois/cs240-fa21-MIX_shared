@@ -23,3 +23,6 @@ class Microservice:
 
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
+
+    def __str__(self) -> str:
+        return f'Microservice(ip={self.ip},  name={self.name}, creator={self.creator})'

@@ -98,7 +98,13 @@ def POST_MIX():
     r = []
     for im in connected_apps.copy():
         # get the IM response:
-        j = process_request(im, lat, lon)
+        try:
+            j = process_request(im, lat, lon)
+        except Exception as e:
+            print(im)
+            print(e)
+            connected_apps.discard(im)
+            continue
 
         # add metadata about the IM service:
         j.update({
