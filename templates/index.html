@@ -20,8 +20,6 @@
     <title>MIX :: CS 240</title>
     <script>
       function sendPOST() {
-        // let formData = { location: document.getElementById("displayLat").innerText
-        //                 + ',' + document.getElementById("displayLng").innerText};
         let formData = { location: document.getElementById("latInput").value
                         + ',' + document.getElementById("longInput").value};
 
@@ -73,8 +71,6 @@
       <h1>Welcome to <span class="mix">MIX</span>!</h1>
       <!-- Map display -->
       <div id="map"></div>
-      <!-- <p><b>Latitude: <span id="displayLat"></span></b>
-      <br><b>Longitude: <span id="displayLng"></span></b></p> -->
       <br>
       <label for="latInput">Latitude:</label>
       <input type="text" id="latInput" name="latInput">
@@ -91,12 +87,8 @@
     <script>
       var defaultLat = 40.1125;
       var defaultLng = -88.2284;
-      // var displayLat = document.getElementById('displayLat');
-      // var displayLng = document.getElementById('displayLng');
       var latInput = document.getElementById('latInput');
       var longInput = document.getElementById('longInput');
-      // displayLat.innerHTML = defaultLat;
-      // displayLng.innerHTML = defaultLng;
       latInput.value = defaultLat.toString();
       longInput.value = defaultLng.toString();
       var map = L.map('map').setView([defaultLat, defaultLng], 1); // Set default center and zoom level
@@ -121,9 +113,6 @@
         console.log(e)
         marker
           .setLatLng(e.latlng);
-
-          // displayLat.innerHTML = e.latlng.lat;
-          // displayLng.innerHTML = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
           latInput.value = e.latlng.lat;
           longInput.value = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
       }
