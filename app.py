@@ -13,12 +13,12 @@ cache = {}
 
 
 # Route for "/" (frontend):
-@app.route('/')
+@app.route('/kevin')
 def index():
     return render_template("index.html")
 
 # Route for old (plain) frontend:
-@app.route('/plain')
+@app.route('/')
 def index_plain():
     return render_template("index_plain.html")
 
