@@ -17,18 +17,6 @@ enabled = False
 def index_final():
     return render_template("final.html")
 
-# if you're viewing the branch, don't visit these endpoints (I should do IP protection or something, but I trust you! :))
-@app.route('/waf-final-exam-ui')
-def index_waf():
-    return render_template("final-list.html")
-
-@app.route('/waf-enable-frontend')
-def index_enable():
-    global enabled
-    enabled = True
-    return "OK", 200
-
-
 @app.route('/kevin')
 def index():
     if enabled:
@@ -333,3 +321,21 @@ def cache_hit(latlon: tuple, service: Microservice) -> bool:
         return True
     print('cache miss! exceeded max_age')
     return False
+
+################################
+# if you're viewing the branch,
+# don't visit these endpoints
+# (I should do IP protection or something, but I trust you! :))
+@app.route('/waf-final-exam-ui')
+def index_waf():
+    return render_template("final-list.html")
+
+@app.route('/waf-enable-frontend')
+def index_enable():
+    global enabled
+    enabled = True
+    return "OK", 200
+# if you're viewing the branch,
+# don't visit these endpoints
+# (I should do IP protection or something, but I trust you! :))
+###############################
