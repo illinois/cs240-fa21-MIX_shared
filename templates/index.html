@@ -94,7 +94,7 @@
     <main>
       <div style="background-color: #fffbf2; width: 100%">
         <div class="hero">
-          <img src="/templates/businesscardprinting (2).png" alt="">
+          <img src="{{url_for('static', filename='businesscardprinting (2).png')}}" alt="">
           <div class="infoForHero">
             <p>
               As a class we created a gateway middleware which connects to an student IM's where we tried to get as much
@@ -145,7 +145,6 @@
       var marker = L.marker([defaultLat,defaultLng]).addTo(map)
       
       function updateMapFromInput() {
-        console.log("thisran")
         marker
           .setLatLng([latInput.value,longInput.value])
       }
