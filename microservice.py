@@ -1,9 +1,12 @@
+import uuid
+
 class Microservice:
     ip = None
     dependency_info = []
     name = None
     creator = None
     tile = None
+    id = None
 
     dependencies = None
     max_age = None
@@ -14,6 +17,7 @@ class Microservice:
         self.name = name
         self.creator = creator
         self.tile = tile
+        self.id = str(uuid.uuid4())
 
     def __hash__(self) -> int:
         return hash(self.ip)
@@ -25,4 +29,4 @@ class Microservice:
         return not self.__eq__(other)
 
     def __str__(self) -> str:
-        return f'Microservice(ip={self.ip},  name={self.name}, creator={self.creator})'
+        return f'Microservice(ip={self.ip},  name={self.name}, creator={self.creator}, id={self.id})'

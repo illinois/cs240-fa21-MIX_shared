@@ -11,16 +11,43 @@ app = Flask(__name__)
 connected_apps = set()
 cache = {}
 
+enabled = False
 
-# Route for "/" (frontend):
 @app.route('/')
+def index_final():
+    return render_template("final.html")
+
+# if you're viewing the branch, don't visit these endpoints (I should do IP protection or something, but I trust you! :))
+@app.route('/waf-final-exam-ui')
+def index_waf():
+    return render_template("final-list.html")
+
+@app.route('/waf-enable-frontend')
+def index_waf():
+    global enabled
+    enabled = True
+    return "OK", 200
+
+
+@app.route('/kevin')
 def index():
-    return render_template("index.html")
+    if enabled:
+        return render_template("index.html")
+    else:
+        return render_template("final.html")
 
 # Route for old (plain) frontend:
 @app.route('/plain')
 def index_plain():
-    return render_template("index_plain.html")
+    if enabled:
+        return render_template("index_plain.html")
+    else:
+        return render_template("final.html")
+
+
+@app.route('/connectedIMs')
+def connected():
+    return jsonify({ "connectedIMs": len(connected_apps) })
 
 
 @app.route('/microservice', methods=['PUT'])
@@ -51,18 +78,18 @@ def add_microservice():
 @app.route('/microservice', methods=['DELETE'])
 def remove_microservice():
     print(f'delete request received from: {request.host}')
-    previous_len = len(connected_apps)
-    j = request.json
+    # previous_len = len(connected_apps)
+    # j = request.json
 
-    if 'ip' not in j or 'port' not in j:
-        return 'Invalid Input', 400
+    # if 'ip' not in j or 'port' not in j:
+    #     return 'Invalid Input', 400
 
-    ip = j['ip'] + ':' + j['port']
-    m = Microservice(ip, [])
+    # ip = j['ip'] + ':' + j['port']
+    # m = Microservice(ip, [])
 
-    connected_apps.discard(m)
-    if len(connected_apps) == previous_len:
-        return 'Not Found', 404
+    # connected_apps.discard(m)
+    # if len(connected_apps) == previous_len:
+    #     return 'Not Found', 404
 
     return 'Success', 200
 
@@ -73,31 +100,85 @@ def list_all_connected_services():
         'name': service.name,
         'creator': service.creator,
         'ip': service.ip,
-        'dependencies': [depend.ip for depend in service.dependencies] if service.dependencies is not None else []
+        'id': service.id,
+        'dependencies': [depend.ip for depend in service.dependencies] if service.dependencies is not None else [],
     } for service in connected_apps]
 
     return jsonify(status), 200
+
+
+def processLocation(form_location):
+    match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", form_location)
+    if match is None:
+        raise ValueError('Invalid input')
+
+    lat = float(match.group(1))
+    lon = float(match.group(3))
+
+    if abs(lat) > 90:
+        raise ValueError('Invalid latitude')
+
+    if abs(lon) > 180:
+        raise ValueError('Invalid longitude')
+
+    return lat, lon
+
+
+def getIMbyid(id: str) -> Microservice:
+    for im in connected_apps:
+        if im.id == id:
+            return im
+
+    raise ValueError(f"No IM found with id={id}")
+
+def addIMmetadata(im: Microservice, j: dict):
+    j.update({
+        '_metadata': {
+            'name': im.name,
+            'creator': im.creator,
+            'tile': im.tile,
+            'max-age': im.max_age,
+            'id': im.id,
+        }
+    })
+
+
+@app.route('/MIX-single', methods=["POST"])
+def POST_MIX_by_id():
+    global connected_apps
+
+    # process form data
+    try:
+        lat, lon = processLocation(request.form['location'])
+        IM_id = request.form['id']
+    except ValueError as e:
+        return str(e), 400
+
+    # find IM with id
+    try:
+        im = getIMbyid(IM_id)
+    except ValueError as e:
+        return str(e), 400
+
+    # process IM request
+    j = process_request(im, lat, lon)
+    if j == {}:
+        return "Request failed in `process_request`", 400
+    addIMmetadata(im, j)
+
+    return jsonify(j), 200
 
 
 # Route for "/MIX" (middleware):
 @app.route('/MIX', methods=["POST"])
 def POST_MIX():
     global connected_apps
+
     # process form data
-    location = request.form['location']
-
-    match = re.match(r"\s*([+-]?([0-9]*[.])?[0-9]+)[,\s]+([+-]?([0-9]*[.])?[0-9]+)\s*", location)
-    if match is None:
-        return 'Invalid input', 400
-
-    lat = float(match.group(1))
-    lon = float(match.group(3))
-
-    if abs(lat) > 90:
-        return 'Invalid latitude', 400
-
-    if abs(lon) > 180:
-        return 'Invalid longitude', 400
+    try:
+        lat, lon = processLocation(request.form['location'])
+    except ValueError as e:
+        return str(e), 400
 
     # aggregate JSON from all IMs
     r = []
@@ -112,14 +193,7 @@ def POST_MIX():
             continue
 
         # add metadata about the IM service:
-        j.update({
-            '_metadata': {
-                'name': im.name,
-                'creator': im.creator,
-                'tile': im.tile,
-                'max-age': im.max_age
-            }
-        })
+        addIMmetadata(im, j)
 
         r.append(j)
 
@@ -160,7 +234,9 @@ def process_request(service: Microservice, lat: float, lon: float, visited=tuple
     """
     # cache check
     if cache_hit((lat, lon), service):
-        return cache[(lat, lon)][service.ip][0]
+        j = cache[(lat, lon)][service.ip][0].copy()
+        j["_cache"] = "hit"
+        return j
 
     # first time dependency search
     if service.dependencies is None:
