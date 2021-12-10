@@ -22,6 +22,9 @@
       function sendPOST() {
         let formData = { location: document.getElementById("latInput").value
                         + ',' + document.getElementById("longInput").value};
+        
+        let showCoordinates = document.getElementById("GotInfo");
+        showCoordinates.innerText = 'Information Related to Coordinates: ' + document.getElementById("latInput").value.toString() + ',' + document.getElementById("longInput").value.toString();
 
         $.post("/MIX", formData)
         .done(function (data) {
@@ -50,6 +53,27 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
+      /* Hero */
+      .hero {
+        margin: 0 auto 0 auto;
+        width: 90%;
+        display: grid;
+        grid-template-columns: 2fr 5fr;
+      }
+      .hero img {
+        width: 100%;
+        align-self: center;
+      }
+      .hero .infoForHero {
+        padding: 15px 0px 15px 0px;
+        place-self: center;
+        width: 90%;
+        text-align: center;
+      }
+      .hero .infoForHero #mixIt {
+        background: -webkit-linear-gradient(#13294B, #FF552E);
+      }
+
       /* Tile options */
       .grid-item {
         width: 25%;
@@ -67,20 +91,36 @@
     </style>    
   </head>
   <body>
-    <main class="container">
-      <h1>Welcome to <span class="mix">MIX</span>!</h1>
-      <!-- Map display -->
-      <div id="map"></div>
-      <br>
-      <label for="latInput">Latitude:</label>
-      <input type="text" id="latInput" name="latInput">
-      <br>
-      <label for="longInput">Longitude:</label>
-      <input type="text" id="longInput" name="longInput">
-      <br>
-      <button onclick="sendPOST();updateMapFromInput();" class="btn btn-secondary">MIX it!</button>
+    <main>
+      <div style="background-color: #fffbf2; width: 100%">
+        <div class="hero">
+          <img src="/templates/businesscardprinting (2).png" alt="">
+          <div class="infoForHero">
+            <p>
+              As a class we created a gateway middleware which connects to an student IM's where we tried to get as much
+              information from a set of coordinates as possible!
+            </p>
+            <br>
+            <label for="latInput">Latitude:</label>
+            <input type="text" id="latInput" name="latInput">
+            <br>
+            <label for="longInput">Longitude:</label>
+            <input type="text" id="longInput" name="longInput">
+            <br>
+            <button onclick="updateMapFromInput();" class="btn btn-secondary">Update Pin</button>
+            <button onclick="sendPOST();updateMapFromInput();" class="btn btn-secondary" id="mixIt">MIX it!</button>
+            <br>
+          </div>
+          
+        </div>
+      
+        <!-- Map display -->
+        <div id="map"></div>
+      </div>
+      
       <br>
       <!-- Tile display -->
+      <h1 id="GotInfo"></h1>
       <div class="grid" id="result"></div>
     </main>
 
