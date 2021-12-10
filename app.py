@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 connected_apps = set()
 cache = {}
-
+reverse_dict = dict()
 
 # Route for "/" (frontend):
 @app.route('/')
@@ -61,6 +61,7 @@ def remove_microservice():
     m = Microservice(ip, [])
 
     connected_apps.discard(m)
+    remove_service_from_cache(m)
     if len(connected_apps) == previous_len:
         return 'Not Found', 404
 
@@ -109,6 +110,7 @@ def POST_MIX():
             print(im)
             print(e)
             connected_apps.discard(im)
+            remove_service_from_cache(im)
             continue
 
         # add metadata about the IM service:
@@ -194,6 +196,7 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     except requests.exceptions.RequestException:
         print(f'service {service.name} at {service.ip} not connecting. removed from MIX!')
         connected_apps.discard(service)
+        remove_service_from_cache(service)
         return {}
 
     if 500 > r.status_code >= 400:
@@ -202,6 +205,7 @@ def make_im_request(service: Microservice, j: dict, lat: float, lon: float) -> d
     elif r.status_code >= 500:
         print(f'service {service.name} at {service.ip} returned error code {str(r.status_code)} - removed from MIX!')
         connected_apps.discard(service)
+        remove_service_from_cache(service)
         return {}
 
     add_entry_to_cache((lat, lon), service, r)
@@ -237,9 +241,17 @@ def add_entry_to_cache(latlon: tuple, service: Microservice, response) -> None:
     # enter the service response json into our cache
     if latlon not in cache:
         cache[latlon] = {service.ip: (response.json(), datetime.now())}
+        # Add coordinates to reverse dict 
+        reverse_dict[service.ip] = [latlon]
     else:
         cache[latlon][service.ip] = (response.json(), datetime.now())
+        # Add coordinates to reverse dict 
+        reverse_dict[service.ip].append(latlon)
 
+def remove_service_from_cache(service: Microservice):
+    for latlon in reverse_dict[service.ip]:
+        cache[latlon].pop(service.ip)
+    print(f'service at {service.ip} cleared from cache!')
 
 def cache_hit(latlon: tuple, service: Microservice) -> bool:
     """
