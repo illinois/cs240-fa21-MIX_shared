@@ -23,7 +23,7 @@ def index_waf():
     return render_template("final-list.html")
 
 @app.route('/waf-enable-frontend')
-def index_waf():
+def index_enable():
     global enabled
     enabled = True
     return "OK", 200
