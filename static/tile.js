@@ -15,13 +15,27 @@ function createTile(element) {
   var temp = document.createElement('div');
   temp.className = "grid-item"
   // Format tile
-  temp.innerHTML = '<div class="card"><div class="card-body"><h5 class="card-title">' +
+  try {
+    temp.innerHTML = '<div class="card"><div class="card-body"><h5 class="card-title">' +
                     element._metadata.tile + 
-                    '</h5><p class="card-text">' + 
+                    '</h5>' +
+                    '<img src="' + element.image +'" alt="IM Image">' +
+                    '<p class="card-text">' + 
                     unpackContent(element) + 
                     '</p><p class="card-text"><small class="text-muted">Created by ' +
                     element._metadata.creator +
                     '</small></p></div></div>';
+  } catch(error) {
+    temp.innerHTML = '<div class="card"><div class="card-body"><h5 class="card-title">' +
+                    element._metadata.tile + 
+                    '</h5>' +
+                    '<p class="card-text">' + 
+                    unpackContent(element) + 
+                    '</p><p class="card-text"><small class="text-muted">Created by ' +
+                    element._metadata.creator +
+                    '</small></p></div></div>';
+  }
+  
   document.getElementById("result").appendChild(temp);
 }
 
