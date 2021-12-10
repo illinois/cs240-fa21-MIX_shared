@@ -20,8 +20,10 @@
     <title>MIX :: CS 240</title>
     <script>
       function sendPOST() {
-        let formData = { location: document.getElementById("displayLat").innerText
-                        + ',' + document.getElementById("displayLng").innerText};
+        // let formData = { location: document.getElementById("displayLat").innerText
+        //                 + ',' + document.getElementById("displayLng").innerText};
+        let formData = { location: document.getElementById("latInput").value
+                        + ',' + document.getElementById("longInput").value};
 
         $.post("/MIX", formData)
         .done(function (data) {
@@ -71,10 +73,16 @@
       <h1>Welcome to <span class="mix">MIX</span>!</h1>
       <!-- Map display -->
       <div id="map"></div>
-      <p><b>Latitude: <span id="displayLat"></span></b>
-      <br><b>Longitude: <span id="displayLng"></span></b></p>
+      <!-- <p><b>Latitude: <span id="displayLat"></span></b>
+      <br><b>Longitude: <span id="displayLng"></span></b></p> -->
       <br>
-      <button onclick="sendPOST();" class="btn btn-secondary">MIX it!</button>
+      <label for="latInput">Latitude:</label>
+      <input type="text" id="latInput" name="latInput">
+      <br>
+      <label for="longInput">Longitude:</label>
+      <input type="text" id="longInput" name="longInput">
+      <br>
+      <button onclick="sendPOST();updateMapFromInput();" class="btn btn-secondary">MIX it!</button>
       <br>
       <!-- Tile display -->
       <div class="grid" id="result"></div>
@@ -83,10 +91,14 @@
     <script>
       var defaultLat = 40.1125;
       var defaultLng = -88.2284;
-      var displayLat = document.getElementById('displayLat');
-      var displayLng = document.getElementById('displayLng');
-      displayLat.innerHTML = defaultLat;
-      displayLng.innerHTML = defaultLng;
+      // var displayLat = document.getElementById('displayLat');
+      // var displayLng = document.getElementById('displayLng');
+      var latInput = document.getElementById('latInput');
+      var longInput = document.getElementById('longInput');
+      // displayLat.innerHTML = defaultLat;
+      // displayLng.innerHTML = defaultLng;
+      latInput.value = defaultLat.toString();
+      longInput.value = defaultLng.toString();
       var map = L.map('map').setView([defaultLat, defaultLng], 1); // Set default center and zoom level
 
       var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -99,12 +111,21 @@
           }).addTo(map);
           
       var marker = L.marker([defaultLat,defaultLng]).addTo(map)
-
+      
+      function updateMapFromInput() {
+        console.log("thisran")
+        marker
+          .setLatLng([latInput.value,longInput.value])
+      }
       function onMapClick(e) {
+        console.log(e)
         marker
           .setLatLng(e.latlng);
-          displayLat.innerHTML = e.latlng.lat;
-          displayLng.innerHTML = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
+
+          // displayLat.innerHTML = e.latlng.lat;
+          // displayLng.innerHTML = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
+          latInput.value = e.latlng.lat;
+          longInput.value = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
       }
 
       map.on('click', onMapClick);
