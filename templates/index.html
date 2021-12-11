@@ -20,8 +20,11 @@
     <title>MIX :: CS 240</title>
     <script>
       function sendPOST() {
-        let formData = { location: document.getElementById("displayLat").innerText
-                        + ',' + document.getElementById("displayLng").innerText};
+        let formData = { location: document.getElementById("latInput").value
+                        + ',' + document.getElementById("longInput").value};
+        
+        let showCoordinates = document.getElementById("GotInfo");
+        showCoordinates.innerText = 'Information Related to Coordinates: ' + document.getElementById("latInput").value.toString() + ',' + document.getElementById("longInput").value.toString();
 
         $.post("/MIX", formData)
         .done(function (data) {
@@ -34,6 +37,23 @@
           $("#content").html(`<hr><h3>Error - ${data.status}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`);
         })
       };
+
+      function filterPOSTbyPersonName() {
+        var searchName = document.getElementById("PersonSearch").value;
+        var responses = document.getElementById('result').children;
+
+        for (i = 0; i <= responses.length - 1; i++) {
+            console.log(responses[i].getElementsByTagName("*")['creator'].innerText);
+            console.log(searchName)
+            if (responses[i].getElementsByTagName("*")['creator'].innerText.includes(searchName)){
+              console.log('true')
+              responses[i].style.display = "block";
+            } else {
+              console.log('false')
+              responses[i].style.display = "none";
+            }
+        }
+      }
     </script>
     <style>
       #map {
@@ -50,6 +70,27 @@
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
+      /* Hero */
+      .hero {
+        margin: 0 auto 0 auto;
+        width: 90%;
+        display: grid;
+        grid-template-columns: 2fr 5fr;
+      }
+      .hero img {
+        width: 100%;
+        align-self: center;
+      }
+      .hero .infoForHero {
+        padding: 15px 0px 15px 0px;
+        place-self: center;
+        width: 90%;
+        text-align: center;
+      }
+      .hero .infoForHero #mixIt {
+        background: -webkit-linear-gradient(#13294B, #FF552E);
+      }
+
       /* Tile options */
       .grid-item {
         width: 25%;
@@ -67,26 +108,53 @@
     </style>    
   </head>
   <body>
-    <main class="container">
-      <h1>Welcome to <span class="mix">MIX</span>!</h1>
-      <!-- Map display -->
-      <div id="map"></div>
-      <p><b>Latitude: <span id="displayLat"></span></b>
-      <br><b>Longitude: <span id="displayLng"></span></b></p>
-      <br>
-      <button onclick="sendPOST();" class="btn btn-secondary">MIX it!</button>
+    <main>
+      <div style="background-color: #fffbf2; width: 100%">
+        <div class="hero">
+          <img src="{{url_for('static', filename='businesscardprinting (2).png')}}" alt="">
+          <div class="infoForHero">
+            <p>
+              As a class we created a gateway middleware which connects to an student IM's where we tried to get as much
+              information from a set of coordinates as possible!
+            </p>
+            <br>
+            <label for="latInput">Latitude:</label>
+            <input type="text" id="latInput" name="latInput">
+            <br>
+            <label for="longInput">Longitude:</label>
+            <input type="text" id="longInput" name="longInput">
+            <br>
+            <button onclick="updateMapFromInput();" class="btn btn-secondary">Update Pin</button>
+            <button onclick="sendPOST();updateMapFromInput();" class="btn btn-secondary" id="mixIt">MIX it!</button>
+            <br>
+          </div>
+          
+        </div>
+      
+        <!-- Map display -->
+        <div id="map"></div>
+      </div>
+      
       <br>
       <!-- Tile display -->
-      <div class="grid" id="result"></div>
+      <div style="width: 90%; margin: 0 auto 0 auto">
+        <h1 id="GotInfo">Information Related to Coordinates:</h1>
+        <br>
+        <label for="PersonSearch">Filter by Creator Name:</label>
+        <input type="text" id="PersonSearch" name="PersonSearch">
+        <button onclick="filterPOSTbyPersonName();">Filter Creators</button>
+        <hr>
+        <div class="grid" id="result"></div>
+      </div>
     </main>
 
     <script>
       var defaultLat = 40.1125;
       var defaultLng = -88.2284;
-      var displayLat = document.getElementById('displayLat');
-      var displayLng = document.getElementById('displayLng');
-      displayLat.innerHTML = defaultLat;
-      displayLng.innerHTML = defaultLng;
+      var latInput = document.getElementById('latInput');
+      var longInput = document.getElementById('longInput');
+      latInput.value = defaultLat.toString();
+      longInput.value = defaultLng.toString();
       var map = L.map('map').setView([defaultLat, defaultLng], 1); // Set default center and zoom level
 
       var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
@@ -99,12 +167,17 @@
           }).addTo(map);
           
       var marker = L.marker([defaultLat,defaultLng]).addTo(map)
-
+      
+      function updateMapFromInput() {
+        marker
+          .setLatLng([latInput.value,longInput.value])
+      }
       function onMapClick(e) {
+        console.log(e)
         marker
           .setLatLng(e.latlng);
-          displayLat.innerHTML = e.latlng.lat;
-          displayLng.innerHTML = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
+          latInput.value = e.latlng.lat;
+          longInput.value = (e.latlng.lng % 360 + 540) % 360 - 180; // Restricts the longitude to [180,-180]
       }
 
       map.on('click', onMapClick);
