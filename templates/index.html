@@ -37,6 +37,23 @@
           $("#content").html(`<hr><h3>Error - ${data.status}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`);
         })
       };
+
+      function filterPOSTbyPersonName() {
+        var searchName = document.getElementById("PersonSearch").value;
+        var responses = document.getElementById('result').children;
+
+        for (i = 0; i <= responses.length - 1; i++) {
+            console.log(responses[i].getElementsByTagName("*")['creator'].innerText);
+            console.log(searchName)
+            if (responses[i].getElementsByTagName("*")['creator'].innerText.includes(searchName)){
+              console.log('true')
+              responses[i].style.display = "block";
+            } else {
+              console.log('false')
+              responses[i].style.display = "none";
+            }
+        }
+      }
     </script>
     <style>
       #map {
@@ -121,8 +138,11 @@
       <br>
       <!-- Tile display -->
       <div style="width: 90%; margin: 0 auto 0 auto">
-        <h1 id="GotInfo"></h1>
+        <h1 id="GotInfo">Information Related to Coordinates:</h1>
         <br>
+        <label for="PersonSearch">Filter by Creator Name:</label>
+        <input type="text" id="PersonSearch" name="PersonSearch">
+        <button onclick="filterPOSTbyPersonName();">Filter Creators</button>
         <hr>
         <div class="grid" id="result"></div>
       </div>
